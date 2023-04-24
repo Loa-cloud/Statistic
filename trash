@@ -1,0 +1,44 @@
+def statistic_data(request):
+    """ Обработка поискового запроса пользователя и генерация результата
+
+    Args:
+        request: http-запрос с пользовательской информацией
+
+    Returns:
+        HttpResponse: html страница с результатом поиска
+    """
+
+    if request.user.is_teacher():
+        if request.method != 'POST':
+            return (render(request, 'statistic_data.html',
+                           {'right': True, 'form': StatisticForm(request.user.language_id), 'no_data': False}))
+        else:
+
+            # где то здесь создается наполнение списка групп
+            ###################
+
+            form = StatisticForm(request.user.language_id, request.POST or None)
+            if form.is_valid():
+
+                group_id = int(form.cleaned_data['group'])
+
+                stat_res = built_group_stat(group_id, request.user.id_user)
+                if stat_res['state']:
+
+                    response = HttpResponse(FileWrapper(open(stat_res['folder_link'], 'rb')),
+                                            content_type='application/zip')
+
+                    filename = stat_res['file_name'].replace(" ", "_")
+                    response['Content-Disposition'] = 'attachment; filename="{}"'.format(filename)
+
+                    remove(stat_res['folder_link'])
+                    return response
+
+                else:
+                    return render(request, 'statistic_data.html',
+                                  {'right': True, 'form': StatisticForm(request.user.language_id), 'no_data': True})
+
+            ####################
+
+    else:
+        return render(request, 'statistic_data.html', {'right': False, 'no_data': False})
