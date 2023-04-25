@@ -6,8 +6,6 @@ from user_app.models import TblUser, TblStudent, TblGroup, TblLanguage
 import datetime
 
 
-# уже был написан
-# возвращает список групп
 class StatisticForm(forms.Form):
 
     fields = {'group'}
@@ -60,14 +58,9 @@ class StatisticDataForm(forms.Form):
               'check_year']
 
 
-    #modified_date = forms.DateField(initial=datetime.date.today, widget=forms.HiddenInput())
-
     def __init__(self, language_id: int, *args, **kwargs):
         super().__init__(*args, **kwargs)
-
-        groups = TblGroup.objects.filter(language_id=language_id).order_by('-enrollement_date').values('id_group',
-                                                                                                       'group_name',
-                                                                                                       'enrollement_date')
+        groups = TblGroup.objects.filter(language_id=language_id).order_by('-enrollement_date').values('id_group', 'group_name', 'enrollement_date')
         if groups.exists():
             options = []
             for group in groups:
