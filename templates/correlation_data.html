@@ -1,9 +1,142 @@
+<link href="C:\Users\User\PycharmProjects\pythonProject\search_app\virtual-select.min.css">
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 {% extends "base.html" %}
-
-{% block title %} Последние статьи {% endblock %}
-
 {% block content %}
 
-  А это корреляция
+{%if right%}
+<div class="container">
+    <main class="d-flex justify-content-center align-items-center">
 
-{% endblock %}
+        <div class="row">
+            <div class="col-12">
+                <div class="col-12">
+                    <h1 class="mt-3 text-center">Корреляционный анализ</h1>
+                </div>
+
+            <!-- форма это то что потом будет обрабатываться -->
+                <form method="POST" action="" novalidate>
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Язык</label>
+                        {{form.language}}
+                    </div>
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Для кого</label>
+                         {{form.for_who}}
+                    </div>
+
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Второй параметр</label>
+                         {{form.second_p}}
+                    </div>
+
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <div  id="errors_g" >
+                             <label for="errors_g">Ошибки немецкие</label>
+                             <div> {{ form.errors_g }} </div>
+                         </div>
+
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <div  id="errors_f" >
+                             <label for="errors_f"> Ошибки французские </label>
+                             <div> {{ form.errors_f }}</div>
+                         </div>
+                     </div>
+
+
+                    <div class="mb-3">
+                        {% comment %} {% csrf_token %} {% endcomment %}
+                        <label>Начало</label>
+                        {{ form.start_date }}
+                    </div>
+
+                    <div class="mb-3">
+                        {% comment %} {% csrf_token %} {% endcomment %}
+                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Конец</label>
+                        {{ form.end_date }}
+                    </div>
+
+
+
+                    <br>
+                    <button type="submit" class="button button-StaticForm boxet-btn"  name="graph" > Отобразить </button>
+                    <button type="submit" class="button button-StaticForm boxet-btn"  name="exel" > Скачать </button>
+
+                </form>
+
+                <!input type="submit" value="Скачать" class = 'mt-2 btn btn-success save_button'>
+
+                <div class="col-lg-10 col-lg-offset-1" class="chart-container">
+                <h3> График </h3>
+                    <div id="container" class="chart-container">
+                    </div>
+                </div>
+
+
+                {%block script%}
+                <script>
+
+
+                    document.addEventListener('DOMContentLoaded', function () {
+
+                    const data = [[0,1],[0,3],[9,3],[9,3]];
+
+                    const chart = Highcharts.chart('container', {
+                        chart: {
+                            type: 'bar'
+                        },
+                        title: {
+                            text: '{{chart_name}}'
+                        },
+                        xAxis: {
+
+                            title: {
+                                text: 'Количество ошибок на 100 токенов'
+                            }
+                        },
+                        yAxis: {
+
+                            title: {
+                                text: 'Самооценка'
+                            }
+                        },
+                        series: [{
+                        type: 'scatter',
+                        color: 'rgba(0,0,0)',
+                        data: {{series_data}},
+                        marker: {
+                            radius: 2
+                        },
+                        tooltip: {
+                            followPointer: false,
+                            pointFormat: '[{point.x:.1f}, {point.y:.1f}]'
+                        }
+                    }]
+                    });
+                });
+                </script>
+                {%endblock script%}
+            </div>
+        </div>
+    </main>
+    {%if no_data%}
+    <div class="alert alert-danger" role="alert" id = 'warning-message'>
+        Результат запроса пуст, попробуйте изменить запрос.
+      </div>
+    {%endif%}
+</div>
+{%else%}
+Сервис недоступен (Недостаточно прав)
+{%endif%}
+{%endblock%}

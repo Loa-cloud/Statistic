@@ -1,5 +1,9 @@
 <script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
 <script src="https://code.highcharts.com/modules/exporting.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 
 {% extends "base.html" %}
 {% block content %}
@@ -15,57 +19,148 @@
                 </div>
 
                 <!-- форма это то что потом будет обрабатываться -->
-                <form method="POST" novalidate>
-                     <div class = 'mb-3'>
+                <form method="POST" action="" novalidate>
+
+                    <div class = 'mb-3'>
                          {% comment %} {% csrf_token %} {% endcomment %}
                          <label>Язык</label>
-                         <div>{{form.language}}</div>
+                        {{form.language}}
+                    </div>
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Для кого</label>
+                         {{form.for_who}}
+                    </div>
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Группа</label>
+                         {{form.group}}
+                    </div>
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Студент</label>
+                         {{form.student}}
+                    </div>
+
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <div  id="errors_g" >
+                             <label for="errors_g">Ошибки немецкие</label>
+                             <div> {{ form.errors_g }} </div>
+                         </div>
+
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <div  id="errors_f" >
+                             <label for="errors_f">Ошибки французские</label>
+                             <div> {{ form.errors_f }}</div>
+                         </div>
                      </div>
-
-                    <div class = 'mb-3'>
-                        <label>Для кого</label>
-                        <div>{{form.group}}</div>
-                    </div>
-
-                    <div class = 'mb-3'>
-                        <label>Уточнение для кого</label>
-                        <div>{{form.group}}</div>
-                    </div>
-
-                    <div class = 'mb-3'>
-                        <label>Ошибки</label>
-                        <div>{{form.token}}</div>
-                    </div>
 
 
                     <div class="mb-3">
-                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Начало</label>
+                        {% comment %} {% csrf_token %} {% endcomment %}
+                        <label>Начало</label>
                         {{ form.start_date }}
                     </div>
 
                     <div class="mb-3">
+                        {% comment %} {% csrf_token %} {% endcomment %}
                         <label for="{{ form.create_date.id_for_label }}" class="form-label">Конец</label>
                         {{ form.end_date }}
                     </div>
 
-                    <div class="mb-3">
-                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Отображать по месяцам</label>
-                        {{ form.check_month }}
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Отображать по годам</label>
-                        {{ form.check_year }}
-                    </div>
 
 
-                    <input type="submit" value="Скачать" class = 'mt-2 btn btn-success save_button', onclick = "document.getElementById('warning-message').style.visibility = 'hidden';">
+                    <br>
+                    <button type="submit" class="button button-StaticForm boxet-btn"  name="graph" > Отобразить </button>
+                    <button type="submit" class="button button-StaticForm boxet-btn"  name="exel" > Скачать </button>
+
+
+
                 </form>
 
+                <!input type="submit" value="Скачать" class = 'mt-2 btn btn-success save_button'>
 
-                <button class = 'mt-2 mb-3 btn btn-secondary' onclick="history.back()">Назад</button>
+                <div class="col-lg-10 col-lg-offset-1" class="chart-container">
+                <h3> График </h3>
+                    <div id="container" class="chart-container">
+                    </div>
+                </div>
+
+
+                {%block script%}
+                <script>
+
+                    $(document).ready(function() {
+                     $('#cargo_name').change(function() {
+                     alert($('#cargo_name').val());
+
+                     alert($(this).val());
+                      if($(this).val() === "1" || $(this).val() === "Deutsche")
+                       {
+                        $("#errors_g").css("display", "block");
+                        $("#errors_f").css("display", "none");
+                       }
+                       else
+                       {
+                        $("#errors_g").css("display", "none");
+                        $("#errors_f").css("display", "block");
+                       }
+                     });
+                    });
+
+
+
+
+
+
+
+                    document.addEventListener('DOMContentLoaded', function () {
+                    const t = [];
+
+                    for (var i = 0; i < {{series_name|safe}}.length; i++) {
+                        t.push({
+                                name: {{series_name|safe}}[i],
+                                data: {{series_data|safe}}[i]
+                                });
+                    }
+
+
+                    const chart = Highcharts.chart('container', {
+                        chart: {
+                            type: 'bar'
+                        },
+                        title: {
+                            text: '{{chart_name}}'
+                        },
+                        xAxis: {
+                            categories: {{categories|safe}}
+                        },
+                        yAxis: {
+                            title: {
+                                text: 'Количество ошибок'
+                            }
+                        },
+                        series:  t
+                    });
+
+
+
+
+
+                });
+                </script>
+                {%endblock script%}
+
             </div>
         </div>
+
+
+
 
     </main>
     {%if no_data%}
@@ -78,3 +173,5 @@
 Сервис недоступен (Недостаточно прав)
 {%endif%}
 {%endblock%}
+
+

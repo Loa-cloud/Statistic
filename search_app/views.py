@@ -19,7 +19,14 @@ from pakt_work_tools.custom_settings import AUTO_STAT
 from text_app.models import TblMarkup, TblToken, TblTag, TblText, TblGrade
 from .forms import StatisticForm
 from .forms import StatisticDataForm
+from .forms import CorrelationDataForm
 from .stat_src import built_group_stat
+
+import xlwt
+from django.http import HttpResponse
+from django.db import connection
+from django.contrib.auth.models import User
+#from django.utils import simplejson
 
 
 def index(request):
@@ -366,35 +373,849 @@ def get_error_stats(request_data):
 
 
 def statistic_data(request):
-
-
+    '''
     if request.user.is_teacher():
+
+        static_data_form = {}
 
         # заполняем форму
         if request.method != 'POST':
             return (render(request, 'statistic_data.html',
-                           {'right': True, 'form': StatisticDataForm(request.user.language_id), 'no_data': False}))
+                           {'right': True, 'form': StatisticDataForm(), 'no_data': False}))
         # отправляем форму
         else:
-            pass
-
-
-
+            form = StatisticForm()
+            static_data_form['form'] = form
     else:
-        return render(request, 'statistic_data.html', {'right': False, 'no_data': False})
+        return render(request, 'statistic_data.html', {'right': False, 'no_data': False})'''
+
+
+    if request.user.is_teacher():
+
+        context = {}
+        context['right'] = True
+        context['no_data'] = False
+        # добавить в контекст
+        #context['categories'] = ['Apples13', 'Bananas', 'Oranges']
+        #context['chart_name'] = 'Fruit'
+        #context['Jane'] = [1, 10, 4]
+        #form = StatisticDataForm(data=request.POST)
+        #if form.is_valid():
+        context['categories'] = ['Ошибки']
+        context['series_name'] = ['Ошибка 1', 'Ошибка 2', 'Ошибка 3']
+        context['series_data'] = [[3], [1], [6]]
+
+
+
+        # получение данных из формы
+        if request.method == 'POST':
+            print('hi post')
+            form = StatisticDataForm(data=request.POST)
+            if form.is_valid():
+                print('valid')
+                if 'graph' in request.POST:
+                    print('+++++++++++++graph+++++++++++++++++++++++++')
+                    context = get_graph(context, form)
+                    context['form'] = form
+                    return (render(request, 'statistic_data.html', context=context))
+
+                if 'exel' in request.POST:
+                    print('+++++++++++++exel+++++++++++++++++++++++++')
+                    print(form.cleaned_data['start_date'])
+                    responce = statistic_data_get_exel_2(form)
+                    return responce
+
+            else:
+                print('not valid')
+                print(form.cleaned_data)
+
+
+        else:
+            print('hi get')
+            form = StatisticDataForm()
+
+        context['form'] = form
+        return (render(request, 'statistic_data.html', context=context))
+    else:
+        pass
 
     #return render(request, "statistic_data.html")
 
+def get_graph(context, form):
+    print('get_graph')
+    print('form.cleaned_data[\'language\'] - {}'.format(form.cleaned_data['language']))
+    print('form.cleaned_data[\'errors_g\'] - {}'.format(form.cleaned_data['errors_g']))
+    print('form.cleaned_data[\'errors_f\'] - {}'.format(form.cleaned_data['errors_f']))
+    print('form.cleaned_data[\'start_date\'] - {}'.format(form.cleaned_data['start_date']))
+    print('form.cleaned_data[\'end_date\'] - {}'.format(form.cleaned_data['end_date']))
+    #print('form.cleaned_data[\'series_name\'] - {}'.format(form.cleaned_data['series_name']))
 
+
+
+
+    # словарь с ошибками
+    error_dict = {
+        1: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+        2: [27, 28, 29, 30],
+        3: [31, 32, 33, 34],
+        4: [35, 36, 37],
+        5: [38, 39, 40, 41, 42, 43],
+        6: [44, 45, 46, 47, 48],
+        7: [49, 50],
+        8: [51, 52, 53],
+        10: [54, 55, 56, 57],
+        12: [58, 59],
+        14: [60, 61],
+        15: [16, 17, 18],
+        18: [62, 63, 64],
+        19: [20, 22],
+        20: [65],
+        44: [67, 68, 69, 70],
+        45: [71, 72],
+        46: [73, 74],
+        47: [75, 76, 77],
+        58: [78, 79, 80, 81],
+        59: [82, 83],
+        71: [84, 85, 86, 87, 88],
+        72: [89, 90, 91, 92, 93],
+        239: [1, 15, 19, 23, 24, 25, 26],
+        94: [95, 96, 97, 98, 99, 100, 101, 102, 103],
+        95: [117, 118],
+        96: [119, 120, 121, 122, 123, 124, 125],
+        97: [126, 127],
+        98: [128, 129, 130, 131, 132, 133, 134, 135],
+        99: [138, 139, 140, 141, 142, 143, 144, 145],
+        100: [146, 147, 148, 149],
+        101: [150, 151],
+        103: [136, 137],
+        104: [105, 106, 107],
+        108: [109, 110, 111, 112, 113, 114, 115, 116],
+        139: [152, 153],
+        140: [154, 155, 156, 157],
+        141: [158, 159],
+        143: [160, 161],
+        146: [162, 163, 164],
+        241: [94, 104, 108]
+    }
+
+
+    #context['categories'] = ['1', '2', '3']
+    #context['categories'] = form.cleaned_data['group']
+    #print('++++++++++++++')
+    #context['chart_name'] = form.cleaned_data['language']
+    #print(context['chart_name'])
+    #print('++++++++++++++')
+
+    context['error_dict'] = error_dict
+
+    #context['series_name'] = ['Ошибка 1', 'Ошибка 2', 'Ошибка 3']
+    #context['series_data'] = [[9], [1], [1]]
+
+
+    # ищем типы ошибок в зависимости от языка
+    if form.cleaned_data['language'] == '1':
+        context['series_name'] = form.cleaned_data['errors_g']
+    else:
+        context['series_name'] = form.cleaned_data['errors_f']
+    for i in range(len(context['series_name'])):
+        context['series_name'][i] = int(context['series_name'][i])
+
+    #print(context['series_name'])
+
+
+    # ищем количество этих ошибок для курса
+    context['categories'] = ['Корпус']
+    context['series_data'] = []
+    if form.cleaned_data['for_who'] == '0':
+        context['categories'] = ['Корпус']
+        context = get_corpus(context, form)
+    elif form.cleaned_data['for_who'] == '1':
+        context['categories'] = ['Курс 1', 'Курс 2', 'Курс 3', 'Курс 4', 'Курс 5']
+        #context = get_corpus(context, form)
+        context = get_curs(context, form)
+    elif form.cleaned_data['for_who'] == '2':
+        context['categories'] = ['Группа']
+        context = get_group(context, form)
+    elif form.cleaned_data['for_who'] == '3':
+        context['categories'] = form.cleaned_data['student']
+        context = get_student(context, form)
+
+
+    # корректные названия полей ошибок
+    tag_id = context['series_name']
+    context['series_name'] = []
+    for id_error in tag_id:
+        cursor = connection.cursor()
+        cursor.execute(''' 
+        select tag_text from pact.tbltag
+        where id_tag = {0}'''.format(id_error))
+        count0 = cursor.fetchall()
+        context['series_name'].append(count0[0][0])
+
+    print('----------')
+    #print(context['series_name'])
+    print('series_data - {}'.format(context['series_data']))
+    print('categories - {}'.format(context['categories']))
+    print(form.cleaned_data['group'])
+    #print(len(context['series_data'][0]))
+    print(len(context['series_data']))
+    #print(form.cleaned_data['start_date'])
+
+    return context
+
+
+def get_corpus(context, form):
+    print('get_all')
+    print('series_name - {}'.format(context['series_name']))
+    for one_type_error in context['series_name']:
+        # получаем массив ошибок которые нужно подсчитать, также вложеных
+        current_errors = []
+        if one_type_error in context['error_dict']:
+            current_errors = context['error_dict'][one_type_error]
+        current_errors.append(one_type_error)
+
+        current_errors_str = ",".join(map(str, current_errors))
+        print('================')
+        print('current_errors_str - {}'.format(current_errors_str))
+
+
+        cursor = connection.cursor()
+        cursor.execute(''' select sum(A.count)
+            from
+            (select tag_id, count(id_markup) as count
+            from pact.tblmarkup, pact.tblsentence, pact.tbltext, pact.tbltag
+            where
+            pact.tblmarkup.sentence_id = pact.tblsentence.id_sentence and
+            pact.tblsentence.text_id = pact.tbltext.id_text and
+            tblmarkup.tag_id = tbltag.id_tag and
+            markup_type_id = 1 and
+            text_id in (
+            select id_text
+            from pact.tbltextgroup, pact.tbltext, pact.tblgroup
+            where
+            pact.tbltext.create_date >= '{1}' and
+            pact.tbltext.create_date <= '{2}' and
+            pact.tbltextgroup.text_id = pact.tbltext.id_text and
+            pact.tblgroup.id_group = pact.tbltextgroup.group_id and
+            error_tag_check = 1
+            )
+            group by tag_id) A
+            where tag_id in ({0})'''.format(current_errors_str, form.cleaned_data['start_date']
+                                                    , form.cleaned_data['end_date']))
+        count0 = cursor.fetchall()
+        #count = ''.join([n for n in count0[0] if n.isdigit()])
+        arr = []
+
+
+        #print((count0[0][0]))
+        t = count0[0][0]
+        if t is None:
+            t = 0
+        t = int(t)
+        print(t)
+        arr.append(t)
+        context['series_data'].append(arr)
+
+        print('series_data - {}'.format(context['series_data']))
+    return context
+
+def get_curs(context, form):
+    print('get_curs')
+    print('series_name - {}'.format(context['series_name']))
+    for one_type_error in context['series_name']:
+        # получаем массив ошибок которые нужно подсчитать, также вложеных
+        current_errors = []
+        if one_type_error in context['error_dict']:
+            current_errors = context['error_dict'][one_type_error]
+        current_errors.append(one_type_error)
+        current_errors_str = ",".join(map(str, current_errors))
+        print(current_errors_str)
+
+        arr = []
+        for i in range(1,6):
+            cursor = connection.cursor()
+            cursor.execute(''' select sum(A.count)  
+                from  
+                (select tag_id, count(id_markup) as count  
+                from pact.tblmarkup, pact.tblsentence, pact.tbltext, pact.tbltag  
+                where  
+                pact.tblmarkup.sentence_id = pact.tblsentence.id_sentence and  
+                pact.tblsentence.text_id = pact.tbltext.id_text and  
+                tblmarkup.tag_id = tbltag.id_tag and  
+                markup_type_id = 1 and  
+                text_id in (  
+
+                select id_text  
+                from pact.tbltextgroup, pact.tbltext, pact.tblgroup  
+                where  
+                pact.tbltextgroup.text_id = pact.tbltext.id_text and
+                pact.tblgroup.id_group = pact.tbltextgroup.group_id
+                and error_tag_check = 1 and
+                group_name like "_{3}_"
+                union
+                select id_text
+                from pact.tbltext
+                where
+                error_tag_check = 1 and
+                creation_course = {3} and
+                pact.tbltext.create_date >= '{1}' and
+                pact.tbltext.create_date <= '{2}' 
+                )  
+                group by tag_id) A  
+                where tag_id in ({0})'''.format(current_errors_str, form.cleaned_data['start_date']
+                                                , form.cleaned_data['end_date'], i))
+            count0 = cursor.fetchall()
+            t = count0[0][0]
+            if t is None:
+                t = 0
+            t = int(t)
+            print(t)
+            arr.append(t)
+
+        context['series_data'].append(arr)
+
+        print('series_data - {}'.format(context['series_data']))
+    return context
+
+def get_group(context, form):
+    print('get_student')
+    # print('series_name - {}'.format(context['series_name']))
+    for one_type_error in context['series_name']:
+        # получаем массив ошибок которые нужно подсчитать, также вложеных
+        current_errors = []
+        if one_type_error in context['error_dict']:
+            current_errors = context['error_dict'][one_type_error]
+        current_errors.append(one_type_error)
+
+        current_errors_str = ",".join(map(str, current_errors))
+        # print('================')
+        # print('current_errors_str - {}'.format(current_errors_str))
+
+        cursor = connection.cursor()
+        cursor.execute(''' select sum(A.count)
+                    from
+                    (select tag_id, count(id_markup) as count
+                    from pakt3.tblmarkup, pakt3.tblsentence, pakt3.tbltext, pakt3.tbltag
+                    where
+                    pakt3.tblmarkup.sentence_id = pakt3.tblsentence.id_sentence and
+                    pakt3.tblsentence.text_id = pakt3.tbltext.id_text and
+                    tblmarkup.tag_id = tbltag.id_tag and
+                    markup_type_id = 1 and
+                    text_id in (
+                    select id_text
+                    from pakt3.tbltextgroup, pakt3.tbltext, pakt3.tblgroup
+                    where
+                    
+                    pakt3.tblgroup.id_group = {3} and
+                    pakt3.tbltextgroup.text_id = pakt3.tbltext.id_text and
+                    pakt3.tblgroup.id_group = pakt3.tbltextgroup.group_id and
+                    error_tag_check = 1
+                    )
+                    group by tag_id) A
+                    where tag_id in ({0})'''.format(current_errors_str, form.cleaned_data['start_date'],
+                                                    form.cleaned_data['end_date'], int(form.cleaned_data['group'])))
+        count0 = cursor.fetchall()
+        # count = ''.join([n for n in count0[0] if n.isdigit()])
+        arr = []
+
+        # print((count0[0][0]))
+        t = count0[0][0]
+        if t is None:
+            t = 0
+        t = int(t)
+        # print(t)
+        arr.append(t)
+        context['series_data'].append(arr)
+
+        cursor = connection.cursor()
+        cursor.execute('''
+        select group_name, enrollement_date
+        from pakt3.tblgroup
+        where id_group = {0}
+        '''.format(int(form.cleaned_data['group'])))
+        count0 = cursor.fetchall()
+        #print('++++++++++')
+        #print('count0 - {} ({})'.format(count0[0][0], count0[0][1]))
+        t = '{0} ({1})'.format(count0[0][0], count0[0][1])
+        arr = []
+        arr.append(t)
+        context['categories'] = arr
+
+
+        # print('series_data - {}'.format(context['series_data']))
+    return context
+
+def get_student(context, form):
+    print('get_student')
+    #print('series_name - {}'.format(context['series_name']))
+    for one_type_error in context['series_name']:
+        # получаем массив ошибок которые нужно подсчитать, также вложеных
+        current_errors = []
+        if one_type_error in context['error_dict']:
+            current_errors = context['error_dict'][one_type_error]
+        current_errors.append(one_type_error)
+
+        current_errors_str = ",".join(map(str, current_errors))
+        #print('================')
+        #print('current_errors_str - {}'.format(current_errors_str))
+
+        cursor = connection.cursor()
+        cursor.execute(''' select sum(A.count)
+                from
+                (select tag_id, count(id_markup) as count
+                from pakt3.tblmarkup, pakt3.tblsentence, pakt3.tbltext, pakt3.tbltag
+                where
+                pakt3.tblmarkup.sentence_id = pakt3.tblsentence.id_sentence and
+                pakt3.tblsentence.text_id = pakt3.tbltext.id_text and
+                tblmarkup.tag_id = tbltag.id_tag and
+                markup_type_id = 1 and
+                text_id in (
+                select id_text
+                from pakt3.tbltextgroup, pakt3.tbltext, pakt3.tblgroup
+                where
+                pakt3.tbltext.user_id = {3} and
+                pakt3.tbltext.create_date >= '{1}' and
+                pakt3.tbltext.create_date <= '{2}' and
+                pakt3.tbltextgroup.text_id = pakt3.tbltext.id_text and
+                pakt3.tblgroup.id_group = pakt3.tbltextgroup.group_id and
+                error_tag_check = 1
+                )
+                group by tag_id) A
+                where tag_id in ({0})'''.format(current_errors_str, form.cleaned_data['start_date']
+                                                , form.cleaned_data['end_date'], form.cleaned_data['student']))
+        count0 = cursor.fetchall()
+        # count = ''.join([n for n in count0[0] if n.isdigit()])
+        arr = []
+
+        # print((count0[0][0]))
+        t = count0[0][0]
+        if t is None:
+            t = 0
+        t = int(t)
+        #print(t)
+        arr.append(t)
+        context['series_data'].append(arr)
+
+        cursor = connection.cursor()
+        cursor.execute('''
+                select last_name, name, patronymic
+                from pakt3.tbluser
+                where id_user = {0}
+                '''.format(int(form.cleaned_data['student'])))
+        count0 = cursor.fetchall()
+        # print('++++++++++')
+        # print('count0 - {} ({})'.format(count0[0][0], count0[0][1]))
+        t = '{0} {1} {2}'.format(count0[0][0], count0[0][1], count0[0][2])
+        arr = []
+        arr.append(t)
+        context['categories'] = arr
+
+        #print('series_data - {}'.format(context['series_data']))
+    return context
+
+
+def statistic_data_get_exel_2(form):
+    print('++++++')
+    id_language = form.cleaned_data['language']
+    start_date = form.cleaned_data['start_date']
+    end_date = form.cleaned_data['end_date']
+    if form.cleaned_data['language'] == 1:
+        errors_tag = form.cleaned_data['errors_g']
+    else:
+        errors_tag = form.cleaned_data['errors_f']
+    #id_group = form.cleaned_data['group']
+    print(errors_tag)
+    #print(id_group)
+    print(id_language)
+    print(start_date)
+    print(end_date)
+    #
+    # переделать в строчку как в курсовой для добавления в запрос
+    #
+    print('++++++')
+
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="test_token.xls"'
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet('Users Data')  # this will make a sheet named Users Data
+    row_num = 0
+    font_style = xlwt.XFStyle()
+    font_style.font.bold = True
+
+    # названия колонок
+    columns = ['text id', 'text header', 'text type', 'token', 'errors', 'errors/100 token']
+    # TODO: добавить значения в колонки
+    for i in errors_tag:
+        print(i)
+
+
+    for col_num in range(len(columns)):
+        ws.write(row_num, col_num, columns[col_num], font_style)  # at 0 row 0 column
+
+    # загрузка данных в колонки
+    styles = [xlwt.easyxf(num_format_str='yyyy-mm-dd'),
+              xlwt.Style.default_style,
+              ]
+    styl = xlwt.Style.default_style
+
+
+
+
+    ##############################
+
+    cursor = connection.cursor()
+    cursor.execute('''
+                select tbl1.text_id, header, text_type_name, tbl1.c_tok, tbl2.count_markup, (tbl2.count_markup/(tbl1.c_tok/100))
+                from
+                (select distinct text_id, sum(count(pact.tbltoken.order_number)) over(PARTITION BY text_id) as c_tok
+                from pact.tbltoken, pact.tblsentence, pact.tbltext
+                where
+                pact.tblsentence.text_id = pact.tbltext.id_text and
+                pact.tbltoken.sentence_id = pact.tblsentence.id_sentence and
+                text_id in
+                    (
+                    select id_text
+                    from pact.tbltext
+                    where
+                    tbltext.language_id = {0} and error_tag_check = 1
+                    and tbltext.create_date >= '{1}'
+                    and tbltext.create_date <= '{2}'
+                    )
+                group by sentence_id) tbl1,
+                
+                (select pact.tbltext.id_text as id, sum(case when A.id_m = 1 then 1 else 0 end) as count_markup
+                from(
+                    select distinct id_text, pact.tbltext.self_rating, pact.tblmarkup.id_markup, markup_type_id as id_m
+                    from pact.tbltext, pact.tblsentence, pact.tblmarkup, pact.tbltag
+                    where
+                    pact.tblmarkup.sentence_id = pact.tblsentence.id_sentence and
+                    pact.tblsentence.text_id = pact.tbltext.id_text and
+                    tblmarkup.tag_id = tbltag.id_tag and
+                    tbltext.language_id = {0} and error_tag_check = 1) as A
+                , pact.tbltext
+                where pact.tbltext.id_text = A.id_text
+                group by pact.tbltext.id_text
+                ) tbl2, pact.tbltext, pact.tbltexttype
+                where
+                tbl1.text_id = tbl2.id and tbltexttype.id_text_type = tbltext.text_type_id
+                and tbltext.id_text = tbl2.id
+                '''.format(id_language, start_date, end_date))
+    rows = cursor.fetchall()
+
+    # TODO: запрос на поиск токенов на ошибки
+
+    for row in rows:
+        row_num += 1
+        for col_num in range(len(row)):
+            #ws.write(row_num, col_num, row[col_num], styles[col_num])
+            #print(row[col_num])
+            ws.write(row_num, col_num, row[col_num], styl)
+
+    wb.save(response)
+
+    return response
+
+    #return (render(request, 'statistic_data.html', context=context))
+
+
+def statistic_data_get_exel(request):
+    print('-----------------')
+
+    '''
+    form = StatisticDataForm(request.POST)
+    if form.is_valid():
+        print(form.cleaned_data['start_date'])
+            # statistic_data_get_exel_2(form.cleaned_data['start_date'])'''
+
+
+    print('-----------------')
+
+
+    
+    response = HttpResponse(content_type='application/ms-excel')
+    response['Content-Disposition'] = 'attachment; filename="test.xls"'
+    wb = xlwt.Workbook(encoding='utf-8')
+    ws = wb.add_sheet('Users Data') # this will make a sheet named Users Data
+    row_num = 0
+    font_style = xlwt.XFStyle()
+    font_style.font.bold = True
+
+    # названия колонок
+    columns = ['modified_date', 'id_text' ]
+    for col_num in range(len(columns)):
+        ws.write(row_num, col_num, columns[col_num], font_style)  # at 0 row 0 column
+
+
+    # загрузка данных в колонки
+    styles = [xlwt.easyxf(num_format_str='yyyy-mm-dd'),
+              xlwt.Style.default_style,
+              ]
+
+
+    #rows0 = TblText.objects.all().values_list('modified_date', 'id_text')
+    #rows = TblText.objects.raw('''select  create_date, header limit 1'''[0])
+    cursor = connection.cursor()
+    cursor.execute("select  create_date, header from tbltext limit 50")
+    rows = cursor.fetchall()
+
+
+
+    for row in rows:
+        row_num += 1
+        for col_num in range(len(row)):
+            ws.write(row_num, col_num, row[col_num], styles[col_num])
+
+    wb.save(response)
+
+    return response
 
 
 def correlation_data(request):
-    """ Обработка поискового запроса пользователя и генерация результата
+    if request.user.is_teacher():
 
-    Args:
-        request: http-запрос с пользовательской информацией
+        context = {}
+        context['right'] = True
+        context['no_data'] = False
 
-    Returns:
-        HttpResponse: html страница с результатом поиска
-    """
-    return render(request, "correlation_data.html")
+        context['categories'] = ['Ошибки']
+        context['series_name'] = ['Ошибка 1', 'Ошибка 2', 'Ошибка 3']
+        context['series_data'] = [[3], [1], [6]]
+
+        # получение данных из формы
+        if request.method == 'POST':
+            print('hi post')
+            form = CorrelationDataForm(data=request.POST)
+            if form.is_valid():
+                print('valid')
+                if 'graph' in request.POST:
+                    print('+++++++++++++graph+++++++++++++++++++++++++')
+                    context = get_graph_correlation(context, form)
+                    context['form'] = form
+                    return (render(request, 'correlation_data.html', context=context))
+
+                if 'exel' in request.POST:
+                    print('+++++++++++++exel+++++++++++++++++++++++++')
+                    print(form.cleaned_data['start_date'])
+                    responce = statistic_data_get_exel_2(form)
+                    return responce
+
+            else:
+                print('not valid')
+                print(form.cleaned_data)
+
+
+        else:
+            print('hi get')
+            form = CorrelationDataForm()
+
+        context['form'] = form
+        return (render(request, 'correlation_data.html', context=context))
+    else:
+        pass
+
+
+def get_graph_correlation(context, form):
+    print('get_graph_correlation')
+
+    # словарь с ошибками
+    error_dict = {
+        1: [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+        2: [27, 28, 29, 30],
+        3: [31, 32, 33, 34],
+        4: [35, 36, 37],
+        5: [38, 39, 40, 41, 42, 43],
+        6: [44, 45, 46, 47, 48],
+        7: [49, 50],
+        8: [51, 52, 53],
+        10: [54, 55, 56, 57],
+        12: [58, 59],
+        14: [60, 61],
+        15: [16, 17, 18],
+        18: [62, 63, 64],
+        19: [20, 22],
+        20: [65],
+        44: [67, 68, 69, 70],
+        45: [71, 72],
+        46: [73, 74],
+        47: [75, 76, 77],
+        58: [78, 79, 80, 81],
+        59: [82, 83],
+        71: [84, 85, 86, 87, 88],
+        72: [89, 90, 91, 92, 93],
+        239: [1, 15, 19, 23, 24, 25, 26],
+        94: [95, 96, 97, 98, 99, 100, 101, 102, 103],
+        95: [117, 118],
+        96: [119, 120, 121, 122, 123, 124, 125],
+        97: [126, 127],
+        98: [128, 129, 130, 131, 132, 133, 134, 135],
+        99: [138, 139, 140, 141, 142, 143, 144, 145],
+        100: [146, 147, 148, 149],
+        101: [150, 151],
+        103: [136, 137],
+        104: [105, 106, 107],
+        108: [109, 110, 111, 112, 113, 114, 115, 116],
+        139: [152, 153],
+        140: [154, 155, 156, 157],
+        141: [158, 159],
+        143: [160, 161],
+        146: [162, 163, 164],
+        241: [94, 104, 108]
+    }
+    context['error_dict'] = error_dict
+
+
+
+    # ищем типы ошибок в зависимости от языка
+    if form.cleaned_data['language'] == '1':
+        context['series_name'] = form.cleaned_data['errors_g']
+    else:
+        context['series_name'] = form.cleaned_data['errors_f']
+    for i in range(len(context['series_name'])):
+        context['series_name'][i] = int(context['series_name'][i])
+    print(context['series_name'])
+
+
+    # ищем количество этих ошибок для курса
+    context['categories'] = ['Ошибки']
+    context['series_data'] = []
+    if form.cleaned_data['for_who'] == '0':
+        context['categories'] = ['Ошибки']
+        context = get_corpus_correlation(context, form)
+    #elif form.cleaned_data['for_who'] == '1':
+        #context['categories'] = ['Курс 1', 'Курс 2', 'Курс 3', 'Курс 4']
+        #context = get_corpus(context, form)
+        #context = get_curs(context, form)
+    #else:
+        #context = get_corpus(context, form)
+
+    # корректные названия полей ошибок
+    tag_id = context['series_name']
+    context['series_name'] = []
+    for id_error in tag_id:
+        cursor = connection.cursor()
+        cursor.execute(''' 
+        select tag_text from pact.tbltag
+        where id_tag = {0}'''.format(id_error))
+        count0 = cursor.fetchall()
+        context['series_name'].append(count0[0][0])
+
+    print('----------')
+    print(context['series_name'])
+    print('series_data - {}'.format(context['series_data']))
+    print(form.cleaned_data['start_date'])
+
+    return context
+
+
+def get_corpus_correlation(context, form):
+
+    # ошибки
+
+    print('series_name - {}'.format(context['series_name']))
+    current_errors = []
+    for one_type_error in context['series_name']:
+        # получаем массив ошибок которые нужно подсчитать, также вложеных
+        if one_type_error in context['error_dict']:
+
+            current_errors.append(context['error_dict'][one_type_error])
+            #current_errors.append(i)
+        current_errors.append(one_type_error)
+    current_errors_str = ",".join(map(str, current_errors))
+    current_errors_str = current_errors_str.replace('[', ' ').replace(']', ' ')
+    print('***********************')
+    print(current_errors_str)
+
+
+    # запрос на идентификаторы текстов и их эмоциональное состояние
+    cursor = connection.cursor()
+    cursor.execute(''' 
+    select pact.tbltext.id_text, self_rating, Count.S
+    from pact.tbltext,
+    (select distinct pact.tbltext.id_text,
+    sum(count(pact.tbltoken.order_number)) over(PARTITION BY id_text) as S
+    from pact.tbltoken, pact.tblsentence, pact.tbltext
+    where
+    pact.tblsentence.text_id = pact.tbltext.id_text and
+    pact.tbltoken.sentence_id = pact.tblsentence.id_sentence and
+    id_text in (
+    select id_text
+    from pact.tbltext
+    where
+    error_tag_check = 1 and
+    self_rating <> -1 and self_rating is not null and
+    language_id = {0}
+    and pact.tbltext.create_date >= '{1}' and  
+    pact.tbltext.create_date <= '{2}' 
+    )
+    group by pact.tbltoken.sentence_id) as Count
+    where
+    Count.id_text = pact.tbltext.id_text
+
+    
+    '''.format(form.cleaned_data['language'],
+               form.cleaned_data['start_date'], form.cleaned_data['end_date']))
+    text_all = cursor.fetchall()
+
+    point_arr = []
+    # запрос по каждому тексту на количество ошибок
+    for text in text_all:
+        #print('text0 - {} text1 - {}'.format(text[0], text[1]))
+        cursor = connection.cursor()
+        cursor.execute(''' select sum(A.count)  
+        from  
+        (select tag_id, count(id_markup) as count  
+        from pact.tblmarkup, pact.tblsentence, pact.tbltext, pact.tbltag  
+        where  
+        pact.tblmarkup.sentence_id = pact.tblsentence.id_sentence and  
+        pact.tblsentence.text_id = pact.tbltext.id_text and  
+        tblmarkup.tag_id = tbltag.id_tag and  
+        markup_type_id = 1 and  
+        text_id in ( {1} )  
+        group by tag_id) A  
+        where tag_id in ({0})'''.format(current_errors_str, text[0]))
+        count0 = cursor.fetchall()
+        print(count0[0][0])
+
+
+        arr = []
+        t = count0[0][0] # это количество ошибок
+        # text[2] это количество токенов
+        if t is None:
+            t = 0
+        t = int(t)
+        #print('text2 - {}'.format(text[2]))
+        tt = t / (text[2] / 100)
+        arr.append(float(str(round(tt, 2))))
+        arr.append(text[1])
+        point_arr.append(arr)
+    print(point_arr)
+    context['series_data'] = point_arr
+    return context
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
