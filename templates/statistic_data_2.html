@@ -1,0 +1,97 @@
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+{% extends "base.html" %}
+{% block content %}
+
+{%if right%}
+<div class="container">
+    <main class="d-flex justify-content-center align-items-center">
+
+        <div class="row">
+            <div class="col-12">
+                <div class="col-12">
+                    <h1 class="mt-3 text-center">Статистические данные</h1>
+                </div>
+
+
+                <!-- форма это то что потом будет обрабатываться -->
+                <form method="POST" action="{ % url 'statistic_data_get_exel'} " novalidate>
+                     <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Язык</label>
+                         <div>{{form.language}}</div>
+                     </div>
+
+                    <div class = 'mb-3'>
+                        <label>Для кого</label>
+                        <div>{{form.group}}</div>
+                    </div>
+
+                    <div class = 'mb-3'>
+                        <label>Уточнение для кого</label>
+                        <div></div>
+                    </div>
+
+                    <div class = 'mb-3'>
+                        <label>Ошибки</label>
+                        <div>{{form.token}}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Начало</label>
+                        {{ form.start_date }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Конец</label>
+                        {{ form.end_date }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Отображать по месяцам</label>
+                        {{ form.check_month }}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.create_date.id_for_label }}" class="form-label">Отображать по годам</label>
+                        {{ form.check_year }}
+                    </div>
+
+
+                    <input type="submit" value="Скачать" class = 'mt-2 btn btn-success save_button', onclick = "document.getElementById('warning-message').style.visibility = 'hidden';">
+
+
+                <a href="{% url 'statistic_data_get_exel'%}"  class = 'mt-2 btn btn-success save_button' >
+                        Скачать 2
+                    </a>
+                </form>
+
+
+                {% if submitbutton == "Submit" %}
+                <h1>Your first name is </h1>
+                <h1>Your last name is </h1>
+                <h1>Your email is </h1>
+                {% endif %}
+
+
+                <button class = 'mt-2 mb-3 btn btn-secondary' onclick="history.back()">Назад</button>
+            </div>
+        </div>
+
+
+
+
+    </main>
+    {%if no_data%}
+    <div class="alert alert-danger" role="alert" id = 'warning-message'>
+        Результат запроса пуст, попробуйте изменить запрос.
+      </div>
+    {%endif%}
+</div>
+{%else%}
+Сервис недоступен (Недостаточно прав)
+{%endif%}
+{%endblock%}
