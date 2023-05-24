@@ -72,14 +72,9 @@
                         <label for="{{ form.create_date.id_for_label }}" class="form-label">Конец</label>
                         {{ form.end_date }}
                     </div>
-
-
-
                     <br>
                     <button type="submit" class="button button-StaticForm boxet-btn"  name="graph" > Отобразить </button>
                     <button type="submit" class="button button-StaticForm boxet-btn"  name="exel" > Скачать </button>
-
-
 
                 </form>
 
@@ -95,30 +90,6 @@
                 {%block script%}
                 <script>
 
-                    $(document).ready(function() {
-                     $('#cargo_name').change(function() {
-                     alert($('#cargo_name').val());
-
-                     alert($(this).val());
-                      if($(this).val() === "1" || $(this).val() === "Deutsche")
-                       {
-                        $("#errors_g").css("display", "block");
-                        $("#errors_f").css("display", "none");
-                       }
-                       else
-                       {
-                        $("#errors_g").css("display", "none");
-                        $("#errors_f").css("display", "block");
-                       }
-                     });
-                    });
-
-
-
-
-
-
-
                     document.addEventListener('DOMContentLoaded', function () {
                     const t = [];
 
@@ -128,7 +99,6 @@
                                 data: {{series_data|safe}}[i]
                                 });
                     }
-
 
                     const chart = Highcharts.chart('container', {
                         chart: {
@@ -147,20 +117,12 @@
                         },
                         series:  t
                     });
-
-
-
-
-
                 });
                 </script>
                 {%endblock script%}
 
             </div>
         </div>
-
-
-
 
     </main>
     {%if no_data%}
@@ -173,5 +135,3 @@
 Сервис недоступен (Недостаточно прав)
 {%endif%}
 {%endblock%}
-
-

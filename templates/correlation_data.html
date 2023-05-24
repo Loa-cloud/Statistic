@@ -32,6 +32,18 @@
                          {{form.for_who}}
                     </div>
 
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Группа</label>
+                         {{form.group}}
+                    </div>
+
+                    <div class = 'mb-3'>
+                         {% comment %} {% csrf_token %} {% endcomment %}
+                         <label>Студент</label>
+                         {{form.student}}
+                    </div>
+
 
                     <div class = 'mb-3'>
                          {% comment %} {% csrf_token %} {% endcomment %}
@@ -108,7 +120,7 @@
                         yAxis: {
 
                             title: {
-                                text: 'Самооценка'
+                                text: '{{yAxis}}'
                             }
                         },
                         series: [{
